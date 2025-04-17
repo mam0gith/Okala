@@ -1,0 +1,6 @@
+@Okala_HostAddress = http://localhost:5173
+
+GET {{Okala_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
