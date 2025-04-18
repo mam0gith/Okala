@@ -7,10 +7,11 @@ namespace Okala.Services.Resilience
 {
     public class DefaultResiliencePolicyFactory : IResiliencePolicyFactory
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<DefaultResiliencePolicyFactory> _logger;
         private readonly ResilienceSettings _settings;
 
-        public DefaultResiliencePolicyFactory(ILogger logger, IOptions<ResilienceSettings> settings)
+        public DefaultResiliencePolicyFactory(ILogger<DefaultResiliencePolicyFactory> logger,
+            IOptions<ResilienceSettings> settings)
         {
             _logger = logger;
             _settings = settings.Value;

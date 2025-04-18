@@ -8,6 +8,7 @@ using Polly;
 using Polly.Timeout;
 using CryptoRateApp.Services.Resilience;
 using Okala.Services.Resilience;
+using Okala.Providers;
 
 
 Log.Logger = new LoggerConfiguration()
@@ -28,47 +29,27 @@ builder.Services.AddScoped<ICryptoService, CryptoService>();
 builder.Services.AddScoped<ICryptoProvider, CoinMarketCapProvider>();
 builder.Services.AddScoped<IExchangeRatesProvider, ExchangeRatesProvider>();
 builder.Services.AddScoped<ICryptoRateCalculator, CryptoRateCalculator>();
-builder.Services.AddHttpClient<IExchangeRatesProvider, ExchangeRatesProvider>()
-    .AddPolicyHandler(GetCircuitBreakerPolicy())
-    .AddPolicyHandler(GetRetryPolicy());
+builder.Services.AddHttpClient<IExchangeRatesApiClient, ExchangeRatesApiClient>();
 
 
-builder.Services.AddHttpClient<ICryptoProvider, CoinMarketCapProvider>();
+
+
 builder.Services.AddSingleton<IResiliencePolicyFactory, DefaultResiliencePolicyFactory>();
+builder.Services.AddSingleton<ICoinMarketCapApiClient>(provider =>
+    new CoinMarketCapApiClient(
+        provider.GetRequiredService<HttpClient>(),
+        builder.Configuration["CoinMarketCap:ApiKey"] ??
+        throw new ArgumentNullException("CoinMarketCap:ApiKey configuration is missing")));
+builder.Services.AddSingleton<IExchangeRatesApiClient>(provider =>
+    new ExchangeRatesApiClient(
+        provider.GetRequiredService<HttpClient>(),
+        builder.Configuration["ExchangeRates:ApiKey"] ??
+        throw new ArgumentNullException("ExchangeRates:ApiKey configuration is missing")));
+//builder.Services.AddTransient<ICoinMarketCapResponseParser, CoinMarketCapResponseParser>();
 
 
 
 
-static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
-{
-    return Policy<HttpResponseMessage>
-        .Handle<HttpRequestException>() 
-        .OrResult(r => !r.IsSuccessStatusCode)
-        .WaitAndRetryAsync(
-            retryCount: 3,
-            sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(2),
-            onRetry: (outcome, timespan, retryAttempt, context) =>
-            {
-                Console.WriteLine($"Retrying... attempt {retryAttempt}");
-            });
-}
-
-static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
-{
-    return HttpPolicyExtensions
-        .HandleTransientHttpError()
-        .CircuitBreakerAsync(
-            handledEventsAllowedBeforeBreaking: 2,
-            durationOfBreak: TimeSpan.FromSeconds(30),
-            onBreak: (outcome, timespan) =>
-            {
-                Console.WriteLine("Circuit broken!");
-            },
-            onReset: () =>
-            {
-                Console.WriteLine("Circuit reset.");
-            });
-}
 
 builder.Services.AddMemoryCache();
 

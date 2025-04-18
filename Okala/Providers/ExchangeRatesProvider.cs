@@ -1,41 +1,50 @@
 ﻿using System.Text.Json;
 using CryptoRateApp.Configuration;
+using CryptoRateApp.Services.Resilience;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Okala.Providers.Interfaces;
+using Polly;
 
 public class ExchangeRatesProvider : IExchangeRatesProvider
 {
-    private readonly HttpClient _httpClient;
     private readonly ILogger<ExchangeRatesProvider> _logger;
-    private readonly string _apiKey;
+    private readonly IAsyncPolicy<HttpResponseMessage> _resiliencePolicy;
+    private readonly IExchangeRatesApiClient _apiClient;
 
-    public ExchangeRatesProvider(HttpClient httpClient, IConfiguration config, ILogger<ExchangeRatesProvider> logger)
+    public ExchangeRatesProvider(
+        IExchangeRatesApiClient apiClient,
+        IResiliencePolicyFactory resiliencePolicyFactory,
+        ILogger<ExchangeRatesProvider> logger)
     {
-        _httpClient = httpClient;
+        _apiClient = apiClient;
+        _resiliencePolicy = resiliencePolicyFactory.CreateResiliencePolicy();
         _logger = logger;
-        _apiKey = config["ExchangeRates:ApiKey"] ?? throw new ArgumentNullException("API Key not configured");
     }
 
     public async Task<Dictionary<string, decimal>> GetRatesAgainstEURAsync(string[] symbols)
     {
-        var symbolsQuery = string.Join(",", symbols.Distinct().Where(s => !string.IsNullOrWhiteSpace(s)));
+        if (symbols == null || symbols.Length == 0)
+            throw new ArgumentException("No symbols provided.");
 
-        var url = $"http://api.exchangeratesapi.io/v1/latest?access_key={_apiKey}&symbols={symbolsQuery}";
+        var context = new Context("ExchangeRatesAPI");
 
-        var response = await _httpClient.GetAsync(url);
+        var response = await _resiliencePolicy.ExecuteAsync(
+            async (ctx) => await _apiClient.GetLatestRatesAsync(symbols),
+            context);
+
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogError("ExchangeRates API failed: {Code} {Reason}", response.StatusCode, response.ReasonPhrase);
             throw new HttpRequestException("Failed to get exchange rates.");
         }
 
-        using var contentStream = await response.Content.ReadAsStreamAsync();
-        var json = await JsonDocument.ParseAsync(contentStream);
+        using var stream = await response.Content.ReadAsStreamAsync();
+        var json = await JsonDocument.ParseAsync(stream);
 
-        if (!json.RootElement.TryGetProperty("rates", out var rates) || rates.ValueKind != JsonValueKind.Object)
+        if (!json.RootElement.TryGetProperty("rates", out var ratesElement) || ratesElement.ValueKind != JsonValueKind.Object)
         {
-            _logger.LogWarning("Rates missing in response.");
+            _logger.LogWarning("Rates property missing in response.");
             throw new InvalidOperationException("Rates data is invalid.");
         }
 
@@ -43,14 +52,19 @@ public class ExchangeRatesProvider : IExchangeRatesProvider
 
         foreach (var symbol in symbols.Distinct())
         {
-            if (rates.TryGetProperty(symbol, out var rateElement) && rateElement.TryGetDecimal(out var value) && value > 0)
+            if (ratesElement.TryGetProperty(symbol, out var rateEl)
+                && rateEl.TryGetDecimal(out var value)
+                && value > 0)
+            {
                 result[symbol] = value;
+            }
             else
+            {
                 _logger.LogWarning("Rate missing or invalid for symbol: {Symbol}", symbol);
+            }
         }
 
         return result;
     }
-
-   
 }
+

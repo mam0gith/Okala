@@ -1,9 +1,5 @@
-﻿using System.Net.Http.Headers;
-using System.Text.Json;
-using CryptoRateApp.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
+using CryptoRateApp.Services.Resilience;
 using Okala.Providers.Interfaces;
 using Polly;
 
@@ -12,27 +8,21 @@ namespace CryptoRateApp.Providers
 
     public class CoinMarketCapProvider : ICryptoProvider
     {
-        private readonly HttpClient _httpClient;
         private readonly ILogger<CoinMarketCapProvider> _logger;
-        private readonly string _apiKey;
-        private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicy;
+        private readonly IAsyncPolicy<HttpResponseMessage> _resiliencePolicy;
+        private readonly ICoinMarketCapApiClient _apiClient;
 
-        public CoinMarketCapProvider(HttpClient httpClient, IConfiguration config, ILogger<CoinMarketCapProvider> logger)
+
+        public CoinMarketCapProvider(
+            ICoinMarketCapApiClient apiClient,
+            IResiliencePolicyFactory policyFactory,
+            ILogger<CoinMarketCapProvider> logger
+           )
         {
-            _httpClient = httpClient;
             _logger = logger;
-            _apiKey = config["CoinMarketCap:ApiKey"] ?? throw new ArgumentNullException("API Key not configured");
-            _retryPolicy = Policy<HttpResponseMessage>
-                .Handle<HttpRequestException>()
-                .OrResult(response => !response.IsSuccessStatusCode)
-                .WaitAndRetryAsync(
-                    retryCount: 3,
-                    sleepDurationProvider: _ => TimeSpan.FromSeconds(2),
-                    onRetry: (result, timespan, retryCount, context) =>
-                    {
-                        logger.LogWarning("Retry {RetryAttempt} due to: {Reason}", retryCount,
-                            result.Exception?.Message ?? result.Result.StatusCode.ToString());
-                    });
+            _resiliencePolicy = policyFactory.CreateResiliencePolicy();
+            _apiClient = apiClient;
+
         }
 
         public async Task<decimal> GetUsdValueAsync(string cryptoCode)
@@ -40,18 +30,11 @@ namespace CryptoRateApp.Providers
             if (string.IsNullOrWhiteSpace(cryptoCode))
                 throw new ArgumentException("Invalid crypto code.");
 
-            //var url = $"https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={cryptoCode}";
-            // برای تست خطا:
-            var url = $"https://httpstat.us/500";
+
             var context = new Context("GetCryptoPrice");
 
-            var response = await _retryPolicy.ExecuteAsync(
-                async (ctx) =>
-                {
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Headers.Add("X-CMC_PRO_API_KEY", _apiKey);
-                    return await _httpClient.SendAsync(request);
-                },
+            var response = await _resiliencePolicy.ExecuteAsync(
+                async (ctx) => await _apiClient.GetCryptoQuoteAsync(cryptoCode),
                 context);
 
             if (!response.IsSuccessStatusCode)
@@ -63,6 +46,12 @@ namespace CryptoRateApp.Providers
             using var contentStream = await response.Content.ReadAsStreamAsync();
             var json = await JsonDocument.ParseAsync(contentStream);
 
+            return ParsePriceFromResponse(json, cryptoCode);
+
+        }
+
+        private decimal ParsePriceFromResponse(JsonDocument json, string cryptoCode)
+        {
             if (!json.RootElement.TryGetProperty("data", out var data) ||
                 !data.TryGetProperty(cryptoCode, out var coinData) ||
                 !coinData.TryGetProperty("quote", out var quote) ||
@@ -76,6 +65,7 @@ namespace CryptoRateApp.Providers
 
             return priceElement.GetDecimal();
         }
+
 
     }
 
