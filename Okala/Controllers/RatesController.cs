@@ -1,6 +1,7 @@
 ﻿using CryptoRateApp.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Okala.Providers.Interfaces;
+using Okala.Shared;
 
 namespace CryptoRateApp.Controllers;
 
@@ -21,23 +22,7 @@ public class CryptoController : ControllerBase
         if (string.IsNullOrWhiteSpace(cryptoCode))
             return BadRequest("Invalid crypto code.");
 
-        try
-        {
-            var result = await _cryptoService.GetConvertedRatesAsync(cryptoCode.ToUpper());
-            return Ok(result);
-        }
-        catch (HttpRequestException ex)
-        {
-            return StatusCode(503, $"External API error: {ex.Message}");
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound($"Currency not found: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            // You can log the error here as well
-            return StatusCode(500, $"Internal server error: {ex.Message}");
-        }
+        var result = await _cryptoService.GetConvertedRatesAsync(cryptoCode);
+        return Ok(Result<IEnumerable<CryptoRateDto>>.Success(result));
     }
 }
