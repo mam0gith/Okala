@@ -10,6 +10,7 @@ namespace Okala.Tests.Services
         private readonly Mock<ICryptoProvider> _cryptoProviderMock;
         private readonly Mock<IExchangeRatesProvider> _exchangeRatesProviderMock;
         private readonly Mock<ICryptoRateCalculator> _calculatorMock;
+        private readonly Mock<ILogger<CryptoService>> _loggerMock;
         private readonly CryptoService _cryptoService;
 
         public CryptoServiceTests()
@@ -17,11 +18,12 @@ namespace Okala.Tests.Services
             _cryptoProviderMock = new Mock<ICryptoProvider>();
             _exchangeRatesProviderMock = new Mock<IExchangeRatesProvider>();
             _calculatorMock = new Mock<ICryptoRateCalculator>();
+            _loggerMock = new Mock<ILogger<CryptoService>>();
 
             _cryptoService = new CryptoService(
                 _cryptoProviderMock.Object,
                 _exchangeRatesProviderMock.Object,
-                _calculatorMock.Object);
+                _calculatorMock.Object,_loggerMock.Object);
         }
 
         [Fact]

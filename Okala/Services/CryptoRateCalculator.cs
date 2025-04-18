@@ -9,7 +9,7 @@ namespace Okala.Services
         {
             var result = new List<CryptoRateDto>();
 
-            if (!eurRates.TryGetValue("USD", out decimal eurToUsd) || eurToUsd <= 0)
+            if (!eurRates.TryGetValue("USD", out decimal eurToUsd) || eurToUsd <= 0 || usdPrice <= 0)
                 throw new InvalidOperationException("Invalid USD rate from EUR");
 
             result.Add(new CryptoRateDto("USD", Math.Round(usdPrice, 2)));
