@@ -1,25 +1,27 @@
-﻿using Okala.Application.Interfaces.Clients;
+﻿using Microsoft.Extensions.Options;
+using Okala.Application.Interfaces.Clients;
+using Okala.Infrastructure.Configuration;
 
 namespace Okala.Infrastructure.Clients
 {
     public class CoinMarketCapApiClient : ICoinMarketCapApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
+        private readonly CoinMarketCapSettings _settings;
 
-        public CoinMarketCapApiClient(HttpClient httpClient, string apiKey)
+        public CoinMarketCapApiClient(HttpClient httpClient,  IOptions<CoinMarketCapSettings> settings)
         {
             _httpClient = httpClient;
-            _apiKey = apiKey;
+            _settings = settings.Value;
         }
 
         public async Task<HttpResponseMessage> GetCryptoQuoteAsync(string cryptoCode)
         {
-            var url = $"https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={cryptoCode}";
-            //var url = $"https://httpstat.us/500";
+            
+            var url = $"{_settings.BaseUrl}{cryptoCode}";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("X-CMC_PRO_API_KEY", _apiKey);
+            request.Headers.Add("X-CMC_PRO_API_KEY", _settings.ApiKey);
             return await _httpClient.SendAsync(request);
         }
     }

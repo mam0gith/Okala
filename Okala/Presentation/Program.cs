@@ -31,23 +31,16 @@ builder.Services.AddScoped<ICryptoService, CryptoService>();
 builder.Services.AddScoped<ICoinMarketCapProvider, CoinMarketCapProvider>();
 builder.Services.AddScoped<IExchangeRatesProvider, ExchangeRatesProvider>();
 builder.Services.AddScoped<ICryptoRateCalculator, CryptoRateCalculator>();
+builder.Services.AddHttpClient<ICoinMarketCapApiClient, CoinMarketCapApiClient>();
+
 builder.Services.AddHttpClient<IExchangeRatesApiClient, ExchangeRatesApiClient>();
 
+var settings = builder.Configuration.GetSection("ExchangeRates").Get<ExchangeRatesSettings>();
 
 
 
 builder.Services.AddSingleton<IResiliencePolicyFactory, DefaultResiliencePolicyFactory>();
-builder.Services.AddSingleton<ICoinMarketCapApiClient>(provider =>
-    new CoinMarketCapApiClient(
-        provider.GetRequiredService<HttpClient>(),
-        builder.Configuration["CoinMarketCap:ApiKey"] ??
-        throw new ArgumentNullException("CoinMarketCap:ApiKey configuration is missing")));
-builder.Services.AddSingleton<IExchangeRatesApiClient>(provider =>
-    new ExchangeRatesApiClient(
-        provider.GetRequiredService<HttpClient>(),
-        builder.Configuration["ExchangeRates:ApiKey"] ??
-        throw new ArgumentNullException("ExchangeRates:ApiKey configuration is missing")));
-//builder.Services.AddTransient<ICoinMarketCapResponseParser, CoinMarketCapResponseParser>();
+
 
 
 
