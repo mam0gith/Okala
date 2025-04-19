@@ -28,7 +28,7 @@ namespace Okala.Infrastructure.Resilience
                     sleepDurationProvider: attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)),
                     onRetry: (result, delay, retryCount, context) =>
                     {
-                        _logger.LogWarning($"Retry {retryCount} due to: {result.Exception?.Message ?? result.Result.StatusCode.ToString()}");
+                        _logger.LogWarning($"{context.OperationKey} Retry {retryCount} due to: {result.Exception?.Message ?? result.Result.StatusCode.ToString()}");
                     });
 
             // Circuit Breaker Policy
@@ -40,15 +40,15 @@ namespace Okala.Infrastructure.Resilience
                     durationOfBreak: TimeSpan.FromSeconds(_settings.BreakDurationSeconds),
                     onBreak: (result, breakDelay, context) =>
                     {
-                        _logger.LogError($"Circuit broken! Will not attempt for {breakDelay.TotalSeconds} seconds. Reason: {result.Exception?.Message ?? result.Result.StatusCode.ToString()}");
+                        _logger.LogError($"{context.OperationKey} Circuit broken! Will not attempt for {breakDelay.TotalSeconds} seconds. Reason: {result.Exception?.Message ?? result.Result.StatusCode.ToString()}");
                     },
                     onReset: (context) =>
                     {
-                        _logger.LogInformation("Circuit reset - requests allowed again");
+                        _logger.LogInformation("{context.OperationKey} Circuit reset - requests allowed again");
                     },
                     onHalfOpen: () =>
                     {
-                        _logger.LogInformation("Circuit in test mode - one request will be allowed");
+                        _logger.LogInformation("{context.OperationKey} Circuit in test mode - one request will be allowed");
                     });
 
             // Wrap the policies

@@ -11,6 +11,8 @@ using Okala.Application.Interfaces;
 using Okala.Application.Interfaces.Clients;
 using Okala.Application.Interfaces.Providers;
 using Okala.Application.Interfaces.Resilience;
+using Okala.Application.Interfaces.Cache;
+using Okala.Infrastructure.Cache;
 
 
 Log.Logger = new LoggerConfiguration()
@@ -35,18 +37,11 @@ builder.Services.AddHttpClient<ICoinMarketCapApiClient, CoinMarketCapApiClient>(
 
 builder.Services.AddHttpClient<IExchangeRatesApiClient, ExchangeRatesApiClient>();
 
-var settings = builder.Configuration.GetSection("ExchangeRates").Get<ExchangeRatesSettings>();
-
-
-
 builder.Services.AddSingleton<IResiliencePolicyFactory, DefaultResiliencePolicyFactory>();
 
 
-
-
-
-
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ICryptoRateCacheService, InMemoryCryptoRateCacheService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

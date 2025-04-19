@@ -23,12 +23,7 @@ public class CryptoService : ICryptoService
 
     public async Task<IEnumerable<CryptoRateDto>> GetConvertedRatesAsync(string cryptoCode, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(cryptoCode))
-        {
-            _logger.LogWarning("Crypto code was null or empty.");
-            throw new ArgumentException("Crypto code must be provided.");
-        }
-
+     
         _logger.LogInformation("Fetching USD price for crypto code: {CryptoCode}", cryptoCode);
 
         var usdPrice = await _cryptoProvider.GetUsdValueAsync(cryptoCode,cancellationToken);

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Okala.Application.Interfaces.Cache;
 using Okala.Application.Interfaces.Clients;
 using Okala.Application.Interfaces.Providers;
 using Okala.Application.Interfaces.Resilience;
@@ -12,17 +13,20 @@ namespace Okala.Infrastructure.Providers.CoinMarketCap
         private readonly ILogger<CoinMarketCapProvider> _logger;
         private readonly IAsyncPolicy<HttpResponseMessage> _resiliencePolicy;
         private readonly ICoinMarketCapApiClient _apiClient;
+        private readonly ICryptoRateCacheService _cacheService;
 
 
         public CoinMarketCapProvider(
             ICoinMarketCapApiClient apiClient,
             IResiliencePolicyFactory policyFactory,
-            ILogger<CoinMarketCapProvider> logger
+            ILogger<CoinMarketCapProvider> logger,
+            ICryptoRateCacheService cacheService
            )
         {
             _logger = logger;
             _resiliencePolicy = policyFactory.CreateResiliencePolicy();
             _apiClient = apiClient;
+            _cacheService = cacheService;
 
         }
 
@@ -31,6 +35,12 @@ namespace Okala.Infrastructure.Providers.CoinMarketCap
             if (string.IsNullOrWhiteSpace(cryptoCode))
                 throw new ArgumentException("Invalid crypto code.");
 
+            var cached = await _cacheService.GetCachedRateAsync(cryptoCode);
+            if (cached.HasValue)
+            {
+                _logger.LogInformation("Returning cached price for {CryptoCode}", cryptoCode);
+                return cached.Value;
+            }
 
             var context = new Context("GetCryptoPrice");
 
@@ -44,8 +54,10 @@ namespace Okala.Infrastructure.Providers.CoinMarketCap
                 throw new HttpRequestException("Failed to get crypto price.");
             }
 
-            return ParsePriceFromResponse(response, cryptoCode).Result;
+            var price = await ParsePriceFromResponse(response, cryptoCode);
+            await _cacheService.SetCachedRateAsync(cryptoCode, price);
 
+            return price;
         }
 
         private async Task<decimal>  ParsePriceFromResponse(HttpResponseMessage response, string cryptoCode)

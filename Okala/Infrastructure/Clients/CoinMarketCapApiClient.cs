@@ -17,8 +17,9 @@ namespace Okala.Infrastructure.Clients
 
         public async Task<HttpResponseMessage> GetCryptoQuoteAsync(string cryptoCode, CancellationToken cancellationToken)
         {
-            
+
             var url = $"{_settings.BaseUrl}{cryptoCode}";
+            //var url = $"https://httpstat.us/500";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("X-CMC_PRO_API_KEY", _settings.ApiKey);
