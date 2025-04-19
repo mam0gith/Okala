@@ -1,13 +1,14 @@
-﻿using CryptoRateApp.DTOs;
-using Moq;
-using Okala.Providers.Interfaces;
+﻿using Moq;
+using Okala.Application.DTOs;
+using Okala.Application.Interfaces;
+using Okala.Application.Interfaces.Providers;
 using Xunit;
 
 namespace Okala.Tests.Services
 {
     public class CryptoServiceTests
     {
-        private readonly Mock<ICryptoProvider> _cryptoProviderMock;
+        private readonly Mock<ICoinMarketCapProvider> _cryptoProviderMock;
         private readonly Mock<IExchangeRatesProvider> _exchangeRatesProviderMock;
         private readonly Mock<ICryptoRateCalculator> _calculatorMock;
         private readonly Mock<ILogger<CryptoService>> _loggerMock;
@@ -15,7 +16,7 @@ namespace Okala.Tests.Services
 
         public CryptoServiceTests()
         {
-            _cryptoProviderMock = new Mock<ICryptoProvider>();
+            _cryptoProviderMock = new Mock<ICoinMarketCapProvider>();
             _exchangeRatesProviderMock = new Mock<IExchangeRatesProvider>();
             _calculatorMock = new Mock<ICryptoRateCalculator>();
             _loggerMock = new Mock<ILogger<CryptoService>>();

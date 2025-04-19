@@ -1,6 +1,6 @@
 ﻿
 using Xunit;
-using Okala.Services;
+using Okala.Application.Services;
 
 public class CryptoRateCalculatorTests
 {

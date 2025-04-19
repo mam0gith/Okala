@@ -20,4 +20,10 @@
 
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Domain\Entities\" />
+    <Folder Include="Domain\Interfaces\" />
+    <Folder Include="Tests\Unit\" />
+  </ItemGroup>
+
 </Project>
