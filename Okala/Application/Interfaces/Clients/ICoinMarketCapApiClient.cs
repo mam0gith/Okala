@@ -2,6 +2,6 @@
 {
     public interface ICoinMarketCapApiClient
     {
-        Task<HttpResponseMessage> GetCryptoQuoteAsync(string cryptoCode);
+        Task<HttpResponseMessage> GetCryptoQuoteAsync(string cryptoCode, CancellationToken cancellationToken);
     }
 }

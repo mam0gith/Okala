@@ -2,7 +2,7 @@
 {
     public interface IExchangeRatesProvider
     {
-        Task<Dictionary<string, decimal>> GetRatesAgainstEURAsync(string[] symbols);
+        Task<Dictionary<string, decimal>> GetRatesAgainstEURAsync(string[] symbols, CancellationToken cancellationToken);
 
     }
 }

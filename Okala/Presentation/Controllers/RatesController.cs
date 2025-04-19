@@ -17,12 +17,12 @@ public class CryptoController : ControllerBase
     }
 
     [HttpGet("{cryptoCode}")]
-    public async Task<ActionResult<IEnumerable<CryptoRateDto>>> GetRates(string cryptoCode)
+    public async Task<ActionResult<IEnumerable<CryptoRateDto>>> GetRates(string cryptoCode,CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(cryptoCode))
             return BadRequest("Invalid crypto code.");
 
-        var result = await _cryptoService.GetConvertedRatesAsync(cryptoCode);
+        var result = await _cryptoService.GetConvertedRatesAsync(cryptoCode,cancellationToken);
         return Ok(Result<IEnumerable<CryptoRateDto>>.Success(result));
     }
 }

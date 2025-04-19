@@ -2,7 +2,7 @@
 {
     public interface IExchangeRatesApiClient
     {
-        Task<HttpResponseMessage> GetLatestRatesAsync(string[] symbols);
+        Task<HttpResponseMessage> GetLatestRatesAsync(string[] symbols, CancellationToken cancellationToken);
     }
 
 

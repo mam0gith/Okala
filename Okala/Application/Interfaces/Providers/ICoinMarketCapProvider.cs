@@ -2,6 +2,6 @@
 {
     public interface ICoinMarketCapProvider
     {
-        Task<decimal> GetUsdValueAsync(string cryptoCode);
+        Task<decimal> GetUsdValueAsync(string cryptoCode, CancellationToken cancellationToken);
     }
 }

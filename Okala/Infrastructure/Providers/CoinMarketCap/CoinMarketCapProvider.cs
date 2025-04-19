@@ -26,7 +26,7 @@ namespace Okala.Infrastructure.Providers.CoinMarketCap
 
         }
 
-        public async Task<decimal> GetUsdValueAsync(string cryptoCode)
+        public async Task<decimal> GetUsdValueAsync(string cryptoCode, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(cryptoCode))
                 throw new ArgumentException("Invalid crypto code.");
@@ -35,7 +35,7 @@ namespace Okala.Infrastructure.Providers.CoinMarketCap
             var context = new Context("GetCryptoPrice");
 
             var response = await _resiliencePolicy.ExecuteAsync(
-                async (ctx) => await _apiClient.GetCryptoQuoteAsync(cryptoCode),
+                async (ctx) => await _apiClient.GetCryptoQuoteAsync(cryptoCode, cancellationToken),
                 context);
 
             if (!response.IsSuccessStatusCode)

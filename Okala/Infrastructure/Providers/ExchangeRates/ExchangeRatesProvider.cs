@@ -20,7 +20,7 @@ public class ExchangeRatesProvider : IExchangeRatesProvider
         _logger = logger;
     }
 
-    public async Task<Dictionary<string, decimal>> GetRatesAgainstEURAsync(string[] symbols)
+    public async Task<Dictionary<string, decimal>> GetRatesAgainstEURAsync(string[] symbols, CancellationToken cancellationToken)
     {
         if (symbols == null || symbols.Length == 0)
             throw new ArgumentException("No symbols provided.");
@@ -28,7 +28,7 @@ public class ExchangeRatesProvider : IExchangeRatesProvider
         var context = new Context("ExchangeRatesAPI");
 
         var response = await _resiliencePolicy.ExecuteAsync(
-            async (ctx) => await _apiClient.GetLatestRatesAsync(symbols),
+            async (ctx) => await _apiClient.GetLatestRatesAsync(symbols, cancellationToken),
             context);
 
         if (!response.IsSuccessStatusCode)

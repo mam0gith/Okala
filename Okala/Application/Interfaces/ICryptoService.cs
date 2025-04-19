@@ -4,7 +4,7 @@ namespace Okala.Application.Interfaces
 {
     public interface ICryptoService
     {
-        Task<IEnumerable<CryptoRateDto>> GetConvertedRatesAsync(string cryptoCode);
+        Task<IEnumerable<CryptoRateDto>> GetConvertedRatesAsync(string cryptoCode, CancellationToken cancellationToken);
     }
 
 }

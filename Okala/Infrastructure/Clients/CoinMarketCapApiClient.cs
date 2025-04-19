@@ -15,14 +15,14 @@ namespace Okala.Infrastructure.Clients
             _settings = settings.Value;
         }
 
-        public async Task<HttpResponseMessage> GetCryptoQuoteAsync(string cryptoCode)
+        public async Task<HttpResponseMessage> GetCryptoQuoteAsync(string cryptoCode, CancellationToken cancellationToken)
         {
             
             var url = $"{_settings.BaseUrl}{cryptoCode}";
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("X-CMC_PRO_API_KEY", _settings.ApiKey);
-            return await _httpClient.SendAsync(request);
+            return await _httpClient.SendAsync(request, cancellationToken);
         }
     }
 }

@@ -21,7 +21,7 @@ public class CryptoService : ICryptoService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<CryptoRateDto>> GetConvertedRatesAsync(string cryptoCode)
+    public async Task<IEnumerable<CryptoRateDto>> GetConvertedRatesAsync(string cryptoCode, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(cryptoCode))
         {
@@ -31,13 +31,13 @@ public class CryptoService : ICryptoService
 
         _logger.LogInformation("Fetching USD price for crypto code: {CryptoCode}", cryptoCode);
 
-        var usdPrice = await _cryptoProvider.GetUsdValueAsync(cryptoCode);
+        var usdPrice = await _cryptoProvider.GetUsdValueAsync(cryptoCode,cancellationToken);
         _logger.LogInformation("USD price for {CryptoCode}: {UsdPrice}", cryptoCode, usdPrice);
 
         var currencies = new[] { "USD", "EUR", "BRL", "GBP", "AUD" };
         _logger.LogInformation("Fetching EUR rates for currencies: {Currencies}", currencies);
 
-        var eurRates = await _exchangeRatesProvider.GetRatesAgainstEURAsync(currencies);
+        var eurRates = await _exchangeRatesProvider.GetRatesAgainstEURAsync(currencies,cancellationToken);
         _logger.LogInformation("Fetched EUR rates: {@EurRates}", eurRates);
 
         var results = _calculator.CalculateRates(usdPrice, eurRates);

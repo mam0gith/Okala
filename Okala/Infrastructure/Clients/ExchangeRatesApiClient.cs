@@ -15,12 +15,12 @@ namespace Okala.Infrastructure.Clients
             _settings = settings.Value;
         }
 
-        public async Task<HttpResponseMessage> GetLatestRatesAsync(string[] symbols)
+        public async Task<HttpResponseMessage> GetLatestRatesAsync(string[] symbols, CancellationToken cancellationToken)
         {
             var symbolsQuery = string.Join(",", symbols.Distinct().Where(s => !string.IsNullOrWhiteSpace(s)));
             var url = $"{_settings.BaseUrl}?access_key={_settings.ApiKey}&symbols={symbolsQuery}";
 
-            return await _httpClient.GetAsync(url);
+            return await _httpClient.GetAsync(url,cancellationToken );
         }
     }
 
